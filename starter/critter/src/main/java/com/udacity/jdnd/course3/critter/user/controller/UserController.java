@@ -1,8 +1,7 @@
 package com.udacity.jdnd.course3.critter.user.controller;
 
 import com.udacity.jdnd.course3.critter.pet.data.Pet;
-import com.udacity.jdnd.course3.critter.schedule.data.Schedule;
-import com.udacity.jdnd.course3.critter.schedule.dto.ScheduleDTO;
+import com.udacity.jdnd.course3.critter.pet.service.PetService;
 import com.udacity.jdnd.course3.critter.user.data.Customer;
 import com.udacity.jdnd.course3.critter.user.data.Employee;
 import com.udacity.jdnd.course3.critter.user.dto.CustomerDTO;
@@ -10,7 +9,9 @@ import com.udacity.jdnd.course3.critter.user.dto.EmployeeDTO;
 import com.udacity.jdnd.course3.critter.user.dto.EmployeeRequestDTO;
 import com.udacity.jdnd.course3.critter.user.service.UserService;
 import java.util.stream.Collectors;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
@@ -27,16 +28,17 @@ import java.util.Set;
 @RequestMapping("/user")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
+    private final PetService petService;
+
+    public UserController(UserService userService, PetService petService) {
+        this.userService = userService;
+        this.petService = petService;
+    }
 
     @PostMapping("/customer")
     public CustomerDTO saveCustomer(@RequestBody CustomerDTO customerDTO){
-        Customer customer = new Customer();
-        customer.setName(customerDTO.getName());
-        customer.setName(customerDTO.getName());
-        customer.setPhoneNumber(customerDTO.getPhoneNumber());
-        customer.setNotes(customer.getNotes());
+        Customer customer = getCustomer(customerDTO);
         return getCustomerDTO(userService.saveCustomer(customer, customerDTO.getPetIds()));
     }
 
@@ -47,29 +49,35 @@ public class UserController {
     }
 
     @GetMapping("/customer/pet/{petId}")
-    public CustomerDTO getOwnerByPet(@PathVariable long petId){
+    public ResponseEntity<CustomerDTO> getOwnerByPet(@PathVariable long petId){
         Customer customer = userService.getOwnerByPet(petId);
-        return getCustomerDTO(customer);
+        Pet pet = petService.getPetById(petId);
+        return customer == null || pet == null ?
+                ResponseEntity.notFound().build() :
+                ResponseEntity.ok(getCustomerDTO(customer));
     }
 
     @PostMapping("/employee")
     public EmployeeDTO saveEmployee(@RequestBody EmployeeDTO employeeDTO) {
-        Employee employee = new Employee();
-        employee.setName(employeeDTO.getName());
-        employee.setSkills(employeeDTO.getSkills());
-        employee.setDaysAvailable(employeeDTO.getDaysAvailable());
+        Employee employee = getEmployee(employeeDTO);
         return getEmployeeDTO(userService.saveEmployee(employee));
     }
 
     @PostMapping("/employee/{employeeId}")
-    public EmployeeDTO getEmployee(@PathVariable long employeeId) {
-       Employee employee = userService.getEmployee(employeeId);
-       return getEmployeeDTO(employee);
+    public ResponseEntity<EmployeeDTO> getEmployee(@PathVariable long employeeId) {
+       Employee employee = userService.getEmployeeById(employeeId);
+       return employee != null ?
+               ResponseEntity.ok(getEmployeeDTO(employee)) :
+               ResponseEntity.notFound().build();
     }
 
     @PutMapping("/employee/{employeeId}")
-    public void setAvailability(@RequestBody Set<DayOfWeek> daysAvailable, @PathVariable long employeeId) {
+    public ResponseEntity setAvailability(@RequestBody Set<DayOfWeek> daysAvailable, @PathVariable long employeeId) {
+        Employee employee = userService.getEmployeeById(employeeId);
         userService.setAvailability(employeeId, daysAvailable);
+        return employee != null ?
+            ResponseEntity.ok().build() :
+            ResponseEntity.notFound().build();
     }
 
     @GetMapping("/employee/availability")
@@ -95,5 +103,17 @@ public class UserController {
         employeeDTO.setDaysAvailable(employee.getDaysAvailable());
         employeeDTO.setSkills(employee.getSkills());
         return employeeDTO;
+    }
+
+    private Customer getCustomer(CustomerDTO customerDTO) {
+        Customer customer = new Customer();
+        BeanUtils.copyProperties(customerDTO, customer);
+        return customer;
+    }
+
+    private Employee getEmployee(EmployeeDTO employeeDTO) {
+        Employee employee = new Employee();
+        BeanUtils.copyProperties(employeeDTO, employee);
+        return employee;
     }
 }

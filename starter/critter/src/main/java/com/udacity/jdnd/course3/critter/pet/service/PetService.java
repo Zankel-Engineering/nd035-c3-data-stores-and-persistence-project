@@ -13,11 +13,15 @@ import org.springframework.stereotype.Service;
 @Transactional
 public class PetService {
 
-    @Autowired
-    private PetRepository petRepository;
 
-    @Autowired
-    private CustomerRepository customerRepository;
+    private final PetRepository petRepository;
+
+    private final CustomerRepository customerRepository;
+
+    public PetService(PetRepository petRepository, CustomerRepository customerRepository) {
+        this.petRepository = petRepository;
+        this.customerRepository = customerRepository;
+    }
 
     public List<Pet> getAllPets() {
         return petRepository.findAll();

@@ -17,17 +17,24 @@ import org.springframework.stereotype.Service;
 @Transactional
 public class ScheduleService {
 
-    @Autowired
-    private ScheduleRepository scheduleRepository;
+    private final ScheduleRepository scheduleRepository;
 
-    @Autowired
-    private EmployeeRepository employeeRepository;
+    private final EmployeeRepository employeeRepository;
 
-    @Autowired
-    private CustomerRepository customerRepository;
+    private final CustomerRepository customerRepository;
 
-    @Autowired
-    private PetRepository petRepository;
+    private final PetRepository petRepository;
+
+    public ScheduleService(
+            ScheduleRepository scheduleRepository,
+            EmployeeRepository employeeRepository,
+            CustomerRepository customerRepository,
+            PetRepository petRepository) {
+        this.scheduleRepository = scheduleRepository;
+        this.employeeRepository = employeeRepository;
+        this.customerRepository = customerRepository;
+        this.petRepository = petRepository;
+    }
 
     public Schedule createSchedule(Schedule schedule) {
         return scheduleRepository.save(schedule);

@@ -22,14 +22,18 @@ import org.springframework.stereotype.Service;
 @Transactional
 public class UserService {
 
-    @Autowired
-    private PetRepository petRepository;
+    private final PetRepository petRepository;
+    private final CustomerRepository customerRepository;
+    private final EmployeeRepository employeeRepository;
 
-    @Autowired
-    private CustomerRepository customerRepository;
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
+    public UserService(
+            PetRepository petRepository,
+            CustomerRepository customerRepository,
+            EmployeeRepository employeeRepository) {
+        this.petRepository = petRepository;
+        this.customerRepository = customerRepository;
+        this.employeeRepository = employeeRepository;
+    }
 
     public Customer saveCustomer(Customer costumer, List<Long> petIds) {
         List<Pet> pets = petIds != null ?
@@ -48,11 +52,15 @@ public class UserService {
         return pet.getCustomer();
     }
 
+    public Customer getCustomerById(long customerId) {
+        return this.customerRepository.getOne(customerId);
+    }
+
     public Employee saveEmployee(Employee employee) {
         return employeeRepository.save(employee);
     }
 
-    public Employee getEmployee(long employeeId) {
+    public Employee getEmployeeById(long employeeId) {
         return employeeRepository.getOne(employeeId);
     }
 

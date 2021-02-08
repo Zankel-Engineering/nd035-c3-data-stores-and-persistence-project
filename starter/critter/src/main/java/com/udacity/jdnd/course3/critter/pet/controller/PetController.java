@@ -3,8 +3,12 @@ package com.udacity.jdnd.course3.critter.pet.controller;
 import com.udacity.jdnd.course3.critter.pet.data.Pet;
 import com.udacity.jdnd.course3.critter.pet.dto.PetDTO;
 import com.udacity.jdnd.course3.critter.pet.service.PetService;
+import com.udacity.jdnd.course3.critter.user.data.Customer;
+import com.udacity.jdnd.course3.critter.user.service.UserService;
 import java.util.stream.Collectors;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,22 +20,26 @@ import java.util.List;
 @RequestMapping("/pet")
 public class PetController {
 
-    @Autowired
-    private PetService petService;
+    private final PetService petService;
+    private final UserService userService;
+
+    public PetController(
+            PetService petService,
+            UserService userService) {
+        this.petService = petService;
+        this.userService = userService;
+    }
 
     @PostMapping
     public PetDTO savePet(@RequestBody PetDTO petDTO) {
-        Pet pet = new Pet();
-        pet.setType(petDTO.getType());
-        pet.setName(petDTO.getName());
-        pet.setBirthDate(petDTO.getBirthDate());
-        pet.setNotes(petDTO.getNotes());
+        Pet pet = getPet(petDTO);
         return getPetDTO(petService.savePet(pet, petDTO.getOwnerId()));
     }
 
     @GetMapping("/{petId}")
-    public PetDTO getPet(@PathVariable long petId) {
-        return getPetDTO(petService.getPetById(petId));
+    public ResponseEntity<PetDTO> getPet(@PathVariable long petId) {
+        Pet pet = petService.getPetById(petId);
+        return pet != null ? ResponseEntity.ok(getPetDTO(pet)) : ResponseEntity.notFound().build();
     }
 
     @GetMapping
@@ -44,11 +52,13 @@ public class PetController {
     }
 
     @GetMapping("/owner/{ownerId}")
-    public List<PetDTO> getPetsByOwner(@PathVariable long ownerId) {
-        return petService.getPetsByCustomerId(ownerId)
+    public ResponseEntity<List<PetDTO>> getPetsByOwner(@PathVariable long ownerId) {
+        Customer customer = userService.getCustomerById(ownerId);
+        return customer != null ? ResponseEntity.ok(petService.getPetsByCustomerId(ownerId)
                 .stream()
                 .map(this::getPetDTO)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList())) :
+                ResponseEntity.notFound().build();
     }
 
     private PetDTO getPetDTO(Pet pet) {
@@ -60,5 +70,11 @@ public class PetController {
         petDTO.setBirthDate(pet.getBirthDate());
         petDTO.setNotes(pet.getNotes());
         return petDTO;
+    }
+
+    private Pet getPet(PetDTO petDTO) {
+        Pet pet = new Pet();
+        BeanUtils.copyProperties(petDTO, pet);
+        return pet;
     }
 }
